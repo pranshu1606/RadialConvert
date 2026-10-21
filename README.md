@@ -121,3 +121,7 @@ src/RadialConvert/
 - LibreOffice fallback when Office isn't installed
 - Merge several PDFs/images into one PDF, compress PDFs, resize images
 - Installer (MSIX / Inno Setup) and code signing
+
+## License
+
+[MIT](LICENSE) © 2026 Pranshu Thakkar
