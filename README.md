@@ -17,15 +17,27 @@ hold Ctrl ─► read selection ─► glass ring at cursor ─► drag to a for
 
 ## Download / install
 
-`dist\RadialConvert.exe` is a single self-contained exe (about 72 MB) for 64-bit Windows 10/11; there's
-nothing to install, not even .NET. Copy it anywhere and run it. A tray icon appears; right-click it
-for enable/disable, *Convert a file…*, *Start with Windows*, the log, and Exit.
+Two downloads, both for 64-bit Windows 10/11 and neither needing .NET installed:
 
-The exe is not code-signed yet, so SmartScreen may say "Windows protected your PC" the first
+- **`RadialConvert-Setup.exe` (recommended).** A setup wizard that installs for the current user
+  (no administrator prompt) and offers:
+  - a **desktop icon** (Start menu shortcut is always added),
+  - **launch when Windows starts** (quietly, straight to the tray),
+  - launching the app when setup finishes.
+
+  It adds an uninstaller to *Settings → Apps*, which stops the app and removes its files,
+  shortcuts, startup entry and log. Running a newer setup upgrades in place.
+- **`RadialConvert.exe`.** The bare app, for running without installing.
+
+A tray icon appears; right-click it for enable/disable, *Convert a file…*, *Start with Windows*
+(the same setting as the setup option), the log, and Exit.
+
+Neither file is code-signed yet, so SmartScreen may say "Windows protected your PC" the first
 time; choose *More info → Run anyway*. Some antivirus tools are wary of unsigned apps with a
 keyboard hook; the app only watches the Ctrl key and never records keystrokes.
 
-To rebuild it: `powershell -ExecutionPolicy Bypass -File publish.ps1`
+To rebuild both into `dist\`: `powershell -ExecutionPolicy Bypass -File publish.ps1`
+(needs the .NET 10 SDK and Inno Setup 6: `winget install JRSoftware.InnoSetup`).
 
 ## Develop
 

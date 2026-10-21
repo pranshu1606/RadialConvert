@@ -10,14 +10,16 @@ namespace RadialConvert;
 internal static class Program
 {
     /// <summary>
-    /// RadialConvert.exe                         → tray app (tap Ctrl on a selected file)
+    /// RadialConvert.exe                         → tray app (hold Ctrl on a selected file)
+    /// RadialConvert.exe --startup               → tray app started at login: no welcome notification
     /// RadialConvert.exe --list &lt;file&gt;            → print available conversions
     /// RadialConvert.exe --convert &lt;file&gt; &lt;id&gt;   → convert without UI (e.g. id "pdf")
     /// </summary>
     [STAThread]
     static int Main(string[] args)
     {
-        if (args.Length > 0)
+        bool atStartup = args is ["--startup"];
+        if (args.Length > 0 && !atStartup)
             return RunCommandLine(args);
 
         using var singleInstance = new Mutex(true, @"Local\RadialConvert.SingleInstance", out bool isFirst);
@@ -30,8 +32,8 @@ internal static class Program
             e.Handled = true;
         };
 
-        Log.Info("Starting");
-        using var tray = new TrayApp(ConversionRegistry.CreateDefault());
+        Log.Info(atStartup ? "Starting (Windows startup)" : "Starting");
+        using var tray = new TrayApp(ConversionRegistry.CreateDefault(), showWelcome: !atStartup);
         app.Run();
         Log.Info("Exiting");
         return 0;

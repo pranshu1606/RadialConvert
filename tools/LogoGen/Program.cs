@@ -6,8 +6,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 // Draws the Radial Convert logo and writes the app's icon assets:
-//   logo.ico (16–256 px), logo-128.png (in-app), logo-512.png (README / store).
-// Usage: dotnet run --project tools/LogoGen -- <output folder>
+//   logo.ico (16–256 px), logo-128.png (in-app), logo-512.png (README / store),
+//   and, if a second folder is given, the setup wizard images (wizard-*.bmp at 100% and 200%).
+// Usage: dotnet run --project tools/LogoGen -- <assets folder> [installer folder]
 
 internal static class Program
 {
@@ -20,6 +21,19 @@ internal static class Program
     {
         string outDir = Path.GetFullPath(args.Length > 0 ? args[0] : "Assets");
         Directory.CreateDirectory(outDir);
+
+        if (args.Length > 1)
+        {
+            string installerDir = Path.GetFullPath(args[1]);
+            Directory.CreateDirectory(installerDir);
+            foreach (int scale in new[] { 1, 2 })
+            {
+                string suffix = scale == 1 ? "" : "@2x";
+                SaveBmp(WizardBanner(164 * scale, 314 * scale), Path.Combine(installerDir, $"wizard-large{suffix}.bmp"));
+                SaveBmp(OnWhite(Render(55 * scale), 55 * scale), Path.Combine(installerDir, $"wizard-small{suffix}.bmp"));
+            }
+            Console.WriteLine($"Wrote wizard images to {installerDir}");
+        }
 
         var icoSizes = new[] { 16, 20, 24, 32, 40, 48, 64, 128, 256 };
         var frames = new List<(int Size, BitmapSource Image)>();
@@ -112,6 +126,64 @@ internal static class Program
         var figure = new PathFigure { StartPoint = At(fromDeg), IsClosed = false };
         figure.Segments.Add(new ArcSegment(At(toDeg), new Size(r, r), 0, toDeg - fromDeg > 180, SweepDirection.Clockwise, true));
         return new PathGeometry(new[] { figure });
+    }
+
+    /// <summary>Left-hand image on the setup's welcome/finish pages: brand gradient, logo, name.</summary>
+    static BitmapSource WizardBanner(int width, int height)
+    {
+        double k = width / 164.0;
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            var background = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0), EndPoint = new Point(0.6, 1),
+                GradientStops = { new GradientStop(Blue, 0), new GradientStop(Violet, 0.55), new GradientStop(Pink, 1) },
+            };
+            dc.DrawRectangle(background, null, new Rect(0, 0, width, height));
+
+            // Faint echo of the ring behind the logo.
+            var echo = new Pen(new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), 14 * k);
+            dc.DrawEllipse(null, echo, new Point(width / 2.0, 108 * k), 72 * k, 72 * k);
+
+            double logo = 84 * k;
+            dc.DrawImage(Render((int)logo), new Rect((width - logo) / 2, 66 * k, logo, logo));
+
+            var title = new FormattedText("Radial Convert", System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight, new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal),
+                17 * k, Brushes.White, 1.0) { TextAlignment = TextAlignment.Center };
+            dc.DrawText(title, new Point(width / 2.0, 176 * k));
+
+            var tagline = new FormattedText("Hold Ctrl. Drag. Convert.", System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight, new Typeface("Segoe UI"), 10.5 * k,
+                new SolidColorBrush(Color.FromArgb(0xD0, 0xFF, 0xFF, 0xFF)), 1.0) { TextAlignment = TextAlignment.Center };
+            dc.DrawText(tagline, new Point(width / 2.0, 202 * k));
+        }
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        return bitmap;
+    }
+
+    /// <summary>The setup's header image sits on white and BMPs have no transparency.</summary>
+    static BitmapSource OnWhite(BitmapSource image, int size)
+    {
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, size, size));
+            dc.DrawImage(image, new Rect(0, 0, size, size));
+        }
+        var bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        return bitmap;
+    }
+
+    static void SaveBmp(BitmapSource image, string path)
+    {
+        var encoder = new BmpBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(new FormatConvertedBitmap(image, PixelFormats.Bgr24, null, 0)));
+        using var stream = File.Create(path);
+        encoder.Save(stream);
     }
 
     static void SavePng(BitmapSource image, string path)

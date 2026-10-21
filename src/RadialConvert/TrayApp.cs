@@ -28,7 +28,7 @@ internal sealed class TrayApp : IDisposable
     ConfirmWindow? _confirm;
     string? _lastOutput;
 
-    public TrayApp(ConversionRegistry registry)
+    public TrayApp(ConversionRegistry registry, bool showWelcome)
     {
         _registry = registry;
         _detector = new CtrlHoldDetector();
@@ -58,7 +58,8 @@ internal sealed class TrayApp : IDisposable
         _icon.BalloonTipClicked += (_, _) => { if (_lastOutput is not null) RevealInExplorer(_lastOutput); };
         _icon.DoubleClick += (_, _) => PickFileAndShowMenu();
 
-        Notify("Radial Convert is running", "Select a file, hold Ctrl, drag toward a format and let go.", ToolTipIcon.Info);
+        if (showWelcome)
+            Notify("Radial Convert is running", "Select a file, hold Ctrl, drag toward a format and let go.", ToolTipIcon.Info);
     }
 
     void OnHoldStarted()
@@ -162,7 +163,7 @@ internal sealed class TrayApp : IDisposable
         if (_startupItem.Checked)
             key.DeleteValue(RunValue, throwOnMissingValue: false);
         else
-            key.SetValue(RunValue, $"\"{Environment.ProcessPath}\"");
+            key.SetValue(RunValue, $"\"{Environment.ProcessPath}\" --startup"); // same entry the installer writes
         _startupItem.Checked = IsStartupEnabled();
     }
 
